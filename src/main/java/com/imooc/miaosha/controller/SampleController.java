@@ -1,6 +1,8 @@
 package com.imooc.miaosha.controller;
 
 import com.imooc.miaosha.domain.User;
+import com.imooc.miaosha.redis.RedisService;
+import com.imooc.miaosha.redis.UserKey;
 import com.imooc.miaosha.result.Result;
 import com.imooc.miaosha.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,9 @@ public class SampleController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    RedisService redisService;
 
     @RequestMapping("/thymeleaf")
     public String thymeleaf(Model model){
@@ -51,5 +56,20 @@ public class SampleController {
     public Result<Boolean> dbnoTx(){
         boolean result = userService.notx();
         return Result.success(result);
+    }
+
+    @RequestMapping("/redis/get")
+    @ResponseBody
+    public Result<Long> redisGet(){
+        Long v1 = redisService.get("key1",Long.class);
+        return Result.success(v1);
+    }
+
+    @RequestMapping("/redis/set")
+    @ResponseBody
+    public Result<String> redisSet(){
+        Boolean result = redisService.set("key2","hello , redis");
+        String v1 = redisService.get("key2",String.class);
+        return Result.success(v1);
     }
 }
