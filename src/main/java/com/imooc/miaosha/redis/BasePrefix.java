@@ -22,6 +22,6 @@ public abstract class BasePrefix implements KeyPrefix {
     @Override
     public String getPrefix() {
         String className = getClass().getSimpleName();
-        return className+prefix;
+        return className+":"+prefix;
     }
 }

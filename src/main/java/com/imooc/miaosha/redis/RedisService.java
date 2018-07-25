@@ -1,6 +1,7 @@
 package com.imooc.miaosha.redis;
 
 import com.alibaba.fastjson.JSON;
+import org.codehaus.groovy.ast.expr.PrefixExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -16,11 +17,13 @@ public class RedisService {
 
 
 
-    public <T> T get(String key,Class<T> clazz){
+    public <T> T get(KeyPrefix prefix,String key, Class<T> clazz){
         Jedis jedis = null;
         try {
             jedis = jedisPool.getResource();
-            String str = jedis.get(key);
+            //real key
+            String realKey = prefix.getPrefix()+key;
+            String str = jedis.get(realKey);
             T t = stringToBean(str,clazz);
             return t;
         }finally {
@@ -28,13 +31,56 @@ public class RedisService {
         }
     }
 
-    public <T> Boolean set(String key,T value){
+    public <T> Boolean set(KeyPrefix prefix,String key,T value){
         Jedis jedis = null;
         try {
             jedis = jedisPool.getResource();
             String str = beanToString(value);
-            jedis.set(key,str);
+            //real key
+            String realKey = prefix.getPrefix()+key;
+            int seconds = prefix.expireSeconds();
+            if(seconds<=0){
+                jedis.set(realKey,str);
+            }else{
+                jedis.setex(realKey,seconds,str);
+            }
             return true;
+        }finally {
+            returnToPool(jedis);
+        }
+    }
+
+    public <T> Boolean exists(KeyPrefix prefix,String key){
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //real key
+            String realKey = prefix.getPrefix()+key;
+            return jedis.exists(realKey);
+        }finally {
+            returnToPool(jedis);
+        }
+    }
+
+    public <T> Long incr(KeyPrefix prefix,String key){
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //real key
+            String realKey = prefix.getPrefix()+key;
+            return jedis.incr(realKey);
+        }finally {
+            returnToPool(jedis);
+        }
+    }
+
+    public <T> Long decr(KeyPrefix prefix,String key){
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //real key
+            String realKey = prefix.getPrefix()+key;
+            return jedis.decr(realKey);
         }finally {
             returnToPool(jedis);
         }

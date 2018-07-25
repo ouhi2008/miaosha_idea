@@ -60,16 +60,41 @@ public class SampleController {
 
     @RequestMapping("/redis/get")
     @ResponseBody
-    public Result<Long> redisGet(){
-        Long v1 = redisService.get("key1",Long.class);
-        return Result.success(v1);
+    public Result<User> redisGet(){
+        User user = redisService.get(UserKey.getById,""+1,User.class);
+        return Result.success(user);
     }
 
     @RequestMapping("/redis/set")
     @ResponseBody
-    public Result<String> redisSet(){
-        Boolean result = redisService.set("key2","hello , redis");
-        String v1 = redisService.get("key2",String.class);
-        return Result.success(v1);
+    public Result<User> redisSet(){
+        User user = new User();
+        user.setId(1);
+        user.setName("1111");
+        Boolean result = redisService.set(UserKey.getById,""+user.getId(),user);
+        User getUser =  redisService.get(UserKey.getById,""+user.getId(),User.class);
+        return Result.success(getUser);
+    }
+
+    @RequestMapping("/redis/exists")
+    @ResponseBody
+    public Result<Boolean> redisExists(){
+        Boolean result= redisService.exists(UserKey.getById,""+1);
+        return Result.success(result);
+    }
+
+    @RequestMapping("/redis/incr")
+    @ResponseBody
+    public Result<Long> redisIncr(){
+        redisService.set(UserKey.getById,"Seq",100);
+        Long result= redisService.incr(UserKey.getById,"Seq");
+        return Result.success(result);
+    }
+
+    @RequestMapping("/redis/decr")
+    @ResponseBody
+    public Result<Long> redisDecr(){
+        Long result= redisService.decr(UserKey.getById,"Seq");
+        return Result.success(result);
     }
 }
