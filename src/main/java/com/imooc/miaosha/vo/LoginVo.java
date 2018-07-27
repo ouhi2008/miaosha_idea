@@ -1,7 +1,17 @@
 package com.imooc.miaosha.vo;
 
+import com.imooc.miaosha.validator.IsMobile;
+import org.hibernate.validator.constraints.Length;
+
+import javax.validation.constraints.NotNull;
+
 public class LoginVo {
+    @NotNull
+    @IsMobile
     private String mobile;
+
+    @NotNull
+    @Length(min=32)
     private String password;
 
     public String getMobile() {

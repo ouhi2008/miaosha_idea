@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.thymeleaf.util.StringUtils;
 import org.thymeleaf.util.Validate;
 
+import javax.validation.Valid;
+
 @RequestMapping("/login")
 @Controller
 public class LoginController {
@@ -36,26 +38,23 @@ public class LoginController {
 
     @RequestMapping("/do_login")
     @ResponseBody
-    public Result<Boolean> doLogin(LoginVo loginVo){
+    public Result<Boolean> doLogin(@Valid LoginVo loginVo){
         log.info(loginVo.toString());
-        //parameter check
-        String inputPass=loginVo.getPassword();
-        String mobile =loginVo.getMobile();
-        if(StringUtils.isEmpty(inputPass)){
-            return Result.error(CodeMsg.PASSWORD_EMPTY);
-        }
-        if(StringUtils.isEmpty(mobile)){
-            return Result.error(CodeMsg.MOBILE_EMPTY);
-        }
-        if(!ValidatorUtil.isMobile(mobile)){
-            return Result.error(CodeMsg.MOBILE_ERROR);
-        }
-        CodeMsg cm = miaoShaService.login(loginVo);
-        if(cm.getCode() ==0 ){
-            return Result.success(true);
-        }else{
-            return Result.error(cm);
-        }
+//        //parameter check
+//        String inputPass=loginVo.getPassword();
+//        String mobile =loginVo.getMobile();
+//        if(StringUtils.isEmpty(inputPass)){
+//            return Result.error(CodeMsg.PASSWORD_EMPTY);
+//        }
+//        if(StringUtils.isEmpty(mobile)){
+//            return Result.error(CodeMsg.MOBILE_EMPTY);
+//        }
+//        if(!ValidatorUtil.isMobile(mobile)){
+//            return Result.error(CodeMsg.MOBILE_ERROR);
+//        }
+
+        miaoShaService.login(loginVo);
+        return Result.success(true);
 
     }
 
