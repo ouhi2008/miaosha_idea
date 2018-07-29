@@ -1,9 +1,6 @@
 package com.imooc.miaosha.controller;
 
-import java.util.List;
-
 import com.imooc.miaosha.domain.MiaoShaUser;
-import com.imooc.miaosha.redis.MiaoshaUserKey;
 import com.imooc.miaosha.service.MiaoShaService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,17 +29,7 @@ public class GoodsController {
     GoodsService goodsService;
 
     @RequestMapping("/to_list")
-    public String list(Model model,
-                       @CookieValue(value=MiaoShaService.COOKIE_NAME_TOKEN,required = false)String cookieToken,
-                       @RequestParam(value=MiaoShaService.COOKIE_NAME_TOKEN,required = false)String paramToken) {
-
-        if(StringUtils.isEmpty(cookieToken)&&StringUtils.isEmpty(paramToken)){
-            return "login";
-        }
-
-        String token = StringUtils.isEmpty(paramToken)?cookieToken:paramToken;
-
-        MiaoShaUser user = miaoShaService.getByToken(token);
+    public String list(Model model,MiaoShaUser user) {
         model.addAttribute("user", user);
 //        //查询商品列表
 //        List<GoodsVo> goodsList = goodsService.listGoodsVo();
