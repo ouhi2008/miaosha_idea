@@ -2,7 +2,7 @@ package com.imooc.miaosha.domain;
 
 import java.util.Date;
 
-public class MiaoShaUser {
+public class MiaoshaUser {
     private Long id;
     private String nickname;
     private String password;
@@ -14,7 +14,7 @@ public class MiaoShaUser {
 
     @Override
     public String toString() {
-        return "MiaoShaUser{" +
+        return "MiaoshaUser{" +
                 "id=" + id +
                 ", nickname='" + nickname + '\'' +
                 ", password='" + password + '\'' +

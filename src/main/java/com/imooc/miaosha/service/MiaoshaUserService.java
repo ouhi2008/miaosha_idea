@@ -1,7 +1,7 @@
 package com.imooc.miaosha.service;
 
 import com.imooc.miaosha.dao.MiaoShaUserDao;
-import com.imooc.miaosha.domain.MiaoShaUser;
+import com.imooc.miaosha.domain.MiaoshaUser;
 import com.imooc.miaosha.exception.GlobalException;
 import com.imooc.miaosha.redis.MiaoshaUserKey;
 import com.imooc.miaosha.redis.RedisService;
@@ -17,7 +17,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 @Service
-public class MiaoShaService {
+public class MiaoshaUserService {
     @Autowired
     MiaoShaUserDao miaoShaUserDao;
 
@@ -25,7 +25,7 @@ public class MiaoShaService {
     RedisService redisService;
 
     public static final String COOKI_NAME_TOKEN ="token";
-    public MiaoShaUser getById(long id){
+    public MiaoshaUser getById(long id){
         return miaoShaUserDao.getById(id);
     }
 
@@ -36,7 +36,7 @@ public class MiaoShaService {
         String mobile = loginVo.getMobile();
         String formPass = loginVo.getPassword();
         //判断手机号是否存在
-        MiaoShaUser user = getById(Long.parseLong(mobile));
+        MiaoshaUser user = getById(Long.parseLong(mobile));
         if(user == null ){
             throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
         }
@@ -50,13 +50,13 @@ public class MiaoShaService {
         }
 
         //生成COOKIE
-        addCookie(response, user);
+        String token = UUIDUtil.uuid();
+        addCookie(response, token,user);
 
         return true;
     }
 
-    private void addCookie(HttpServletResponse response, MiaoShaUser user) {
-        String token = UUIDUtil.uuid();
+    private void addCookie(HttpServletResponse response,String token, MiaoshaUser user) {
         redisService.set(MiaoshaUserKey.token,token,user);
         Cookie cookie=new Cookie(COOKI_NAME_TOKEN,token);
         cookie.setMaxAge(MiaoshaUserKey.token.expireSeconds());
@@ -64,14 +64,14 @@ public class MiaoShaService {
         response.addCookie(cookie);
     }
 
-    public MiaoShaUser getByToken(HttpServletResponse response,String token) {
+    public MiaoshaUser getByToken(HttpServletResponse response, String token) {
         if(StringUtils.isEmpty(token)){
             return null;
         }
-        MiaoShaUser user = redisService.get(MiaoshaUserKey.token, token, MiaoShaUser.class);
+        MiaoshaUser user = redisService.get(MiaoshaUserKey.token, token, MiaoshaUser.class);
         //延长有效期
         if(user !=null){
-            addCookie(response,user);
+            addCookie(response,token,user);
         }
 
         return user;

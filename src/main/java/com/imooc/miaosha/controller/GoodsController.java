@@ -1,26 +1,25 @@
 package com.imooc.miaosha.controller;
 
-import com.imooc.miaosha.domain.MiaoShaUser;
-import com.imooc.miaosha.service.MiaoShaService;
-import org.apache.commons.lang3.StringUtils;
+import com.imooc.miaosha.domain.MiaoshaUser;
+import com.imooc.miaosha.service.MiaoshaUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.imooc.miaosha.redis.RedisService;
 import com.imooc.miaosha.service.GoodsService;
 import com.imooc.miaosha.vo.GoodsVo;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/goods")
 public class GoodsController {
 
     @Autowired
-    MiaoShaService miaoShaService;
+    MiaoshaUserService miaoshaUserService;
 
     @Autowired
     RedisService redisService;
@@ -29,16 +28,16 @@ public class GoodsController {
     GoodsService goodsService;
 
     @RequestMapping("/to_list")
-    public String list(Model model,MiaoShaUser user) {
+    public String list(Model model,MiaoshaUser user) {
         model.addAttribute("user", user);
-//        //查询商品列表
-//        List<GoodsVo> goodsList = goodsService.listGoodsVo();
-//        model.addAttribute("goodsList", goodsList);
+        //查询商品列表
+        List<GoodsVo> goodsList = goodsService.listGoodsVo();
+        model.addAttribute("goodsList", goodsList);
         return "goods_list";
     }
 
     @RequestMapping("/to_detail/{goodsId}")
-    public String detail(Model model,MiaoShaUser user,
+    public String detail(Model model,MiaoshaUser user,
                          @PathVariable("goodsId")long goodsId) {
         model.addAttribute("user", user);
 
