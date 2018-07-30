@@ -48,7 +48,7 @@ public class MiaoshaController {
 
         //判断是否已经秒杀到了
         MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(),goodsId);
-        if(order == null ){
+        if(order != null ){
             model.addAttribute("errmsg",CodeMsg.REPEATE_MIAOSHA.getMsg());
             return "miaosha_fail";
         }

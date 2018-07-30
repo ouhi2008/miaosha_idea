@@ -55,7 +55,7 @@ goods_count int(11) default 0 ,
 goods_price decimal(10,2) default 0.00 ,
 order_channel tinyint(4) default 0,
 status tinyint(4) efault 0,
-crete_date datetime default null,
+create_date datetime default null,
 pay_date datetime default null,
 primary key(id)
 ) engine=InnoDB auto_increment=12 default charset=utf8mb4;
