@@ -25,10 +25,49 @@ public class MiaoshaUserService {
     RedisService redisService;
 
     public static final String COOKI_NAME_TOKEN ="token";
+
     public MiaoshaUser getById(long id){
-        return miaoShaUserDao.getById(id);
+        //取缓存
+        MiaoshaUser user = redisService.get(MiaoshaUserKey.getById, "" + id, MiaoshaUser.class);
+        if(null != user){
+            return user;
+        }
+
+        //取数据库
+        user =  miaoShaUserDao.getById(id);
+        if(null != user ){
+            redisService.set(MiaoshaUserKey.getById,""+id,user);
+        }
+        return user;
     }
 
+    /**
+     * 使用对象级缓存更新密码
+     * @param token
+     * @param id
+     * @param formPass
+     * @return
+     */
+    public boolean updatePassword(String token,long id,String formPass){
+        //取缓存
+        MiaoshaUser user = getById(id);
+        if(null == user){
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+
+        //更新数据库
+        MiaoshaUser toBeUpdate = new MiaoshaUser();
+        toBeUpdate.setId(id);
+        toBeUpdate.setPassword(MD5Util.formPassToDBPass(formPass,user.getSalt()));
+        miaoShaUserDao.update(toBeUpdate);
+
+        //处理缓存
+        redisService.delete(MiaoshaUserKey.getById,""+id);
+        user.setPassword(formPass);
+        redisService.set(MiaoshaUserKey.token,token,user);
+
+        return true;
+    }
     public boolean login(HttpServletResponse response,LoginVo loginVo) {
         if(loginVo == null){
             throw new GlobalException(CodeMsg.SERVER_ERROR);
