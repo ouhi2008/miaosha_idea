@@ -2,7 +2,9 @@ package com.imooc.miaosha.controller;
 
 import com.imooc.miaosha.domain.MiaoshaUser;
 import com.imooc.miaosha.redis.GoodsKey;
+import com.imooc.miaosha.result.Result;
 import com.imooc.miaosha.service.MiaoshaUserService;
+import com.imooc.miaosha.vo.GoodsDetailVo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -41,6 +43,12 @@ public class GoodsController {
     @Autowired
     ApplicationContext applicationContext;
 
+    /**
+     *
+     * QPS:1267 load:15 mysql
+     * 5000 * 10
+     * QPS:2884, load:5
+     */
     @RequestMapping("/to_list")
     @ResponseBody
     public String list(HttpServletRequest request, HttpServletResponse response, Model model, MiaoshaUser user) {
@@ -64,9 +72,40 @@ public class GoodsController {
         return html;
     }
 
-    @RequestMapping("/to_detail/{goodsId}")
+    @RequestMapping("/detail/{goodsId}")
     @ResponseBody
-    public String detail(HttpServletRequest request, HttpServletResponse response, Model model,MiaoshaUser user,
+    public Result<GoodsDetailVo> detail(HttpServletRequest request, HttpServletResponse response, Model model, MiaoshaUser user,
+                                        @PathVariable("goodsId")long goodsId) {
+        //手动渲染
+        GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
+
+        long startAt = goods.getStartDate().getTime();
+        long endAt = goods.getEndDate().getTime();
+        long now = System.currentTimeMillis();
+
+        int miaoshaStatus = 0;
+        int remainSeconds = 0;
+        if(now < startAt ) {//秒杀还没开始，倒计时
+            miaoshaStatus = 0;
+            remainSeconds = (int)((startAt - now )/1000);
+        }else  if(now > endAt){//秒杀已经结束
+            miaoshaStatus = 2;
+            remainSeconds = -1;
+        }else {//秒杀进行中
+            miaoshaStatus = 1;
+            remainSeconds = 0;
+        }
+
+        GoodsDetailVo vo = new GoodsDetailVo();
+        vo.setUser(user);
+        vo.setGoods(goods);
+        vo.setMiaoshaStatus(miaoshaStatus);
+        vo.setRemainSeconds(remainSeconds);
+        return Result.success(vo);
+    }
+    @RequestMapping("/to_detail2/{goodsId}")
+    @ResponseBody
+    public String detail2(HttpServletRequest request, HttpServletResponse response, Model model,MiaoshaUser user,
                          @PathVariable("goodsId")long goodsId) {
         model.addAttribute("user", user);
 
@@ -107,5 +146,4 @@ public class GoodsController {
         }
         return html;
     }
-
 }
