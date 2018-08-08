@@ -32,6 +32,13 @@ public class SampleController {
         return Result.success("Hello world!");
     }
 
+    @RequestMapping("/mq/topic")
+    @ResponseBody
+    public Result<String> topic(){
+        sender.sendTopic("hello ,mq tester.");
+        return Result.success("Hello world!");
+    }
+
     @RequestMapping("/thymeleaf")
     public String thymeleaf(Model model){
         model.addAttribute("name","wangfei");
