@@ -5,6 +5,7 @@ import com.imooc.miaosha.domain.MiaoshaUser;
 import com.imooc.miaosha.domain.OrderInfo;
 import com.imooc.miaosha.redis.RedisService;
 import com.imooc.miaosha.result.CodeMsg;
+import com.imooc.miaosha.result.Result;
 import com.imooc.miaosha.service.GoodsService;
 import com.imooc.miaosha.service.MiaoshaService;
 import com.imooc.miaosha.service.MiaoshaUserService;
@@ -16,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 
@@ -33,31 +35,29 @@ public class MiaoshaController {
     MiaoshaService miaoshaService;
 
     @RequestMapping("/do_miaosha")
-    public String miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
-        model.addAttribute("user", user);
+    @ResponseBody
+    public Result<OrderInfo> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
         if(user == null ){
-            return "login";
+            return Result.error(CodeMsg.SESSION_ERROR);
         }
 
         //判断库存
         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
         if(goods.getStockCount() <= 0 ){
-            model.addAttribute("errmsg",CodeMsg.MIAO_SHA_OVER.getMsg());
-            return "miaosha_fail";
+            return Result.error(CodeMsg.MIAO_SHA_OVER);
         }
 
         //判断是否已经秒杀到了
         MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(),goodsId);
         if(order != null ){
-            model.addAttribute("errmsg",CodeMsg.REPEATE_MIAOSHA.getMsg());
-            return "miaosha_fail";
+            return Result.error(CodeMsg.REPEATE_MIAOSHA);
         }
 
         //减库存 下订单 写入秒杀订单
+        //1.防止库存负数： 需要增加判断库存>0时，做减库存操作
+        //2.防止同一个用户超卖：秒杀订单表增加唯一索引（user_id,godds_id)
         OrderInfo orderInfo = miaoshaService.miaosha(user,goods);
-        model.addAttribute("orderInfo",orderInfo);
-        model.addAttribute("goods",goods);
-        return "order_detail";
+        return Result.success(orderInfo);
     }
 
 
