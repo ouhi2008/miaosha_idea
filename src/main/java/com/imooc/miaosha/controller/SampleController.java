@@ -1,6 +1,7 @@
 package com.imooc.miaosha.controller;
 
 import com.imooc.miaosha.domain.User;
+import com.imooc.miaosha.rabbitmq.MQSender;
 import com.imooc.miaosha.redis.RedisService;
 import com.imooc.miaosha.redis.UserKey;
 import com.imooc.miaosha.result.Result;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@RequestMapping("/demo1")
+@RequestMapping("/demo")
 public class SampleController {
 
     @Autowired
@@ -20,6 +21,16 @@ public class SampleController {
 
     @Autowired
     RedisService redisService;
+
+    @Autowired
+    MQSender sender;
+
+    @RequestMapping("/mq")
+    @ResponseBody
+    public Result<String> mq(){
+        sender.send("hello ,mq tester.");
+        return Result.success("Hello world!");
+    }
 
     @RequestMapping("/thymeleaf")
     public String thymeleaf(Model model){

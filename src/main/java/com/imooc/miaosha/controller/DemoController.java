@@ -9,7 +9,7 @@ import com.imooc.miaosha.result.CodeMsg;
 import com.imooc.miaosha.result.Result;
 
 @Controller
-@RequestMapping("/demo")
+@RequestMapping("/demo1")
 public class DemoController {
 	
 	 	@RequestMapping("/")
