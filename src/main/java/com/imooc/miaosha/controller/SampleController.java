@@ -35,7 +35,21 @@ public class SampleController {
     @RequestMapping("/mq/topic")
     @ResponseBody
     public Result<String> topic(){
-        sender.sendTopic("hello ,mq tester.");
+        sender.sendTopic("hello ,mq tester toppic.");
+        return Result.success("Hello world!");
+    }
+
+    @RequestMapping("/mq/fanout")
+    @ResponseBody
+    public Result<String> fanout(){
+        sender.sendFanout("hello ,mq tester fanout.");
+        return Result.success("Hello world!");
+    }
+
+    @RequestMapping("/mq/header")
+    @ResponseBody
+    public Result<String> header(){
+        sender.sendHeader("hello ,mq tester header.");
         return Result.success("Hello world!");
     }
 

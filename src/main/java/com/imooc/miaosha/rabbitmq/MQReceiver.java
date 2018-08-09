@@ -25,4 +25,9 @@ public class MQReceiver {
     public void receiveTopic2(String message){
         log.info("receiver queue2 messager: "+message);
     }
+
+    @RabbitListener(queues=MQConfig.HEADERS_EXCHANGE)
+    public void receiveHeaderQueue(byte[] message){
+        log.info("receiver header queue messager: "+message);
+    }
 }
