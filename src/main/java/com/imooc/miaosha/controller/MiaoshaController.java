@@ -3,6 +3,9 @@ package com.imooc.miaosha.controller;
 import com.imooc.miaosha.domain.MiaoshaOrder;
 import com.imooc.miaosha.domain.MiaoshaUser;
 import com.imooc.miaosha.domain.OrderInfo;
+import com.imooc.miaosha.rabbitmq.MQSender;
+import com.imooc.miaosha.rabbitmq.MiaoshaMessage;
+import com.imooc.miaosha.redis.GoodsKey;
 import com.imooc.miaosha.redis.RedisService;
 import com.imooc.miaosha.result.CodeMsg;
 import com.imooc.miaosha.result.Result;
@@ -11,19 +14,17 @@ import com.imooc.miaosha.service.MiaoshaService;
 import com.imooc.miaosha.service.MiaoshaUserService;
 import com.imooc.miaosha.service.OrderService;
 import com.imooc.miaosha.vo.GoodsVo;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Controller
 @RequestMapping("/miaosha")
-public class MiaoshaController {
+public class MiaoshaController implements InitializingBean {
 
     @Autowired
     GoodsService goodsService;
@@ -34,13 +35,41 @@ public class MiaoshaController {
     @Autowired
     MiaoshaService miaoshaService;
 
+    @Autowired
+    RedisService redisService;
+
+    @Autowired
+    MQSender    sender;
+
     @RequestMapping("/do_miaosha")
     @ResponseBody
-    public Result<OrderInfo> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+    public Result<Integer> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+        model.addAttribute("user",user);
         if(user == null ){
             return Result.error(CodeMsg.SESSION_ERROR);
         }
 
+        long stock = redisService.decr(GoodsKey.getMialshaGoodsStock, "" + goodsId);
+        if(stock<0){
+            return Result.error(CodeMsg.MIAO_SHA_OVER);
+        }
+
+        //判断是否已经秒杀到了
+        MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(),goodsId);
+        if(order != null ){
+            return Result.error(CodeMsg.REPEATE_MIAOSHA);
+        }
+
+        //入队
+        MiaoshaMessage mm = new MiaoshaMessage();
+        mm.setUser(user);
+        mm.setGoodsId(goodsId);
+        sender.sendMiaoshaMessage(mm);
+
+        //排除中
+        return Result.success(0);
+
+        /*
         //判断库存
         GoodsVo goods = goodsService.getGoodsVoByGoodsId(goodsId);
         if(goods.getStockCount() <= 0 ){
@@ -58,8 +87,44 @@ public class MiaoshaController {
         //2.防止同一个用户超卖：秒杀订单表增加唯一索引（user_id,godds_id)
         OrderInfo orderInfo = miaoshaService.miaosha(user,goods);
         return Result.success(orderInfo);
+        */
     }
 
+    /**
+     * orderId: 成功
+     * -1  ： 秒杀失败
+     * 0   ： 排除中
+     * @param model
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @RequestMapping(value="/result",method = RequestMethod.GET)
+    @ResponseBody
+    public Result<Long> miaoshaResult(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+        model.addAttribute("user", user);
+        if (user == null) {
+            return Result.error(CodeMsg.SESSION_ERROR);
+        }
 
+        long result = miaoshaService.getMiaoshaResult(user.getId(),goodsId);
 
+        //排除中
+        return Result.success(result);
+    }
+
+    /**
+     * 系统初始化
+     * @throws Exception
+     */
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        List<GoodsVo> goodsList = goodsService.listGoodsVo();
+        if(goodsList==null) {
+            return ;
+        }
+        for(GoodsVo goods : goodsList){
+            redisService.set(GoodsKey.getMialshaGoodsStock,""+goods.getId(),goods.getGoodsStock());
+        }
+    }
 }

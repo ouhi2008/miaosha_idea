@@ -25,6 +25,10 @@ public class SampleController {
     @Autowired
     MQSender sender;
 
+    /*****************************************************
+     * 测试四种交换机
+     **************************************************************/
+    /**
     @RequestMapping("/mq")
     @ResponseBody
     public Result<String> mq(){
@@ -52,6 +56,8 @@ public class SampleController {
         sender.sendHeader("hello ,mq tester header.");
         return Result.success("Hello world!");
     }
+    */
+
 
     @RequestMapping("/thymeleaf")
     public String thymeleaf(Model model){
