@@ -53,7 +53,7 @@ public class MiaoshaService {
     }
 
     private boolean getGoodsOver(long goodsId) {
-        return redisService.get(MiaoshaKey.isGoodsOver,""+goodsId,Boolean.class);
+        return redisService.exists(MiaoshaKey.isGoodsOver,""+goodsId);
     }
 
     private void setGoodsOver(Long goodsId) {

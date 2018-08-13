@@ -20,7 +20,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/miaosha")
@@ -39,24 +41,32 @@ public class MiaoshaController implements InitializingBean {
     RedisService redisService;
 
     @Autowired
-    MQSender    sender;
+    MQSender sender;
+
+    private Map<Long, Boolean> localOverMap = new HashMap<>();
 
     @RequestMapping("/do_miaosha")
     @ResponseBody
-    public Result<Integer> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
-        model.addAttribute("user",user);
-        if(user == null ){
+    public Result<Integer> miaosha(Model model, MiaoshaUser user, @RequestParam("goodsId") long goodsId) {
+        model.addAttribute("user", user);
+        if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
 
+        //内存标记，减少redis访问
+        Boolean over = localOverMap.get(goodsId);
+        if (over) {
+            return Result.error(CodeMsg.MIAO_SHA_OVER);
+        }
         long stock = redisService.decr(GoodsKey.getMialshaGoodsStock, "" + goodsId);
-        if(stock<0){
+        if (stock < 0) {
+            localOverMap.put(goodsId,true);
             return Result.error(CodeMsg.MIAO_SHA_OVER);
         }
 
         //判断是否已经秒杀到了
-        MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(),goodsId);
-        if(order != null ){
+        MiaoshaOrder order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(), goodsId);
+        if (order != null) {
             return Result.error(CodeMsg.REPEATE_MIAOSHA);
         }
 
@@ -94,20 +104,21 @@ public class MiaoshaController implements InitializingBean {
      * orderId: 成功
      * -1  ： 秒杀失败
      * 0   ： 排除中
+     *
      * @param model
      * @param user
      * @param goodsId
      * @return
      */
-    @RequestMapping(value="/result",method = RequestMethod.GET)
+    @RequestMapping(value = "/result", method = RequestMethod.GET)
     @ResponseBody
-    public Result<Long> miaoshaResult(Model model, MiaoshaUser user, @RequestParam("goodsId")long goodsId) {
+    public Result<Long> miaoshaResult(Model model, MiaoshaUser user, @RequestParam("goodsId") long goodsId) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
 
-        long result = miaoshaService.getMiaoshaResult(user.getId(),goodsId);
+        long result = miaoshaService.getMiaoshaResult(user.getId(), goodsId);
 
         //排除中
         return Result.success(result);
@@ -115,16 +126,18 @@ public class MiaoshaController implements InitializingBean {
 
     /**
      * 系统初始化
+     *
      * @throws Exception
      */
     @Override
     public void afterPropertiesSet() throws Exception {
         List<GoodsVo> goodsList = goodsService.listGoodsVo();
-        if(goodsList==null) {
-            return ;
+        if (goodsList == null) {
+            return;
         }
-        for(GoodsVo goods : goodsList){
-            redisService.set(GoodsKey.getMialshaGoodsStock,""+goods.getId(),goods.getGoodsStock());
+        for (GoodsVo goods : goodsList) {
+            redisService.set(GoodsKey.getMialshaGoodsStock, "" + goods.getId(), goods.getStockCount());
+            localOverMap.put(goods.getId(), false);
         }
     }
 }
