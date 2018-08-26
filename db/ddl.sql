@@ -70,3 +70,11 @@ order_id bigint(20) not null,
 goods_id bigint(20) default null comment '商品id',
 primary key(id)
 ) engine=InnoDB auto_increment=12 default charset=utf8mb4;
+
+
+--测试数据
+select *from miaosha.miaosha_order;
+select *from miaosha.miaosha_goods;
+
+delete FROM miaosha.miaosha_order  where id <20;
+update miaosha.miaosha_goods set stock_count=10 where id in (1,2);
