@@ -5,10 +5,7 @@ import com.imooc.miaosha.domain.MiaoshaOrder;
 import com.imooc.miaosha.domain.MiaoshaUser;
 import com.imooc.miaosha.rabbitmq.MQSender;
 import com.imooc.miaosha.rabbitmq.MiaoshaMessage;
-import com.imooc.miaosha.redis.GoodsKey;
-import com.imooc.miaosha.redis.MiaoshaKey;
-import com.imooc.miaosha.redis.OrderKey;
-import com.imooc.miaosha.redis.RedisService;
+import com.imooc.miaosha.redis.*;
 import com.imooc.miaosha.result.CodeMsg;
 import com.imooc.miaosha.result.Result;
 import com.imooc.miaosha.service.GoodsService;
@@ -174,12 +171,26 @@ public class MiaoshaController implements InitializingBean {
 
     @RequestMapping(value="/path", method=RequestMethod.GET)
     @ResponseBody
-    public Result<String> getMiaoshaPath(Model model, MiaoshaUser user,
+    public Result<String> getMiaoshaPath(HttpServletRequest request,Model model, MiaoshaUser user,
                                          @RequestParam("goodsId")long goodsId,
                                          @RequestParam(value="verifyCode",defaultValue = "0")int verifyCode) {
         if(user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);
         }
+
+        //防刷限流 查询访问次数 5秒访问5次
+        String uri = request.getRequestURI();
+        String key = uri+"_"+user.getId();
+        Integer count = redisService.get(AccessKey.access, key, Integer.class);
+        if(count ==null){
+            redisService.set(AccessKey.access,key,1);
+        }else  if(count<5){
+            redisService.incr(AccessKey.access,key);
+        }else {
+            return Result.error(CodeMsg.ACCESS_LIMIT_REACHED);
+        }
+
+
 
         //验证图形码
         boolean check = miaoshaService.checkVerifyCode(user,goodsId,verifyCode);
