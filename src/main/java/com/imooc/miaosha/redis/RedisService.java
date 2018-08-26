@@ -5,9 +5,10 @@ import org.codehaus.groovy.ast.expr.PrefixExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class RedisService {
@@ -25,6 +26,7 @@ public class RedisService {
             String realKey = prefix.getPrefix()+key;
             String str = jedis.get(realKey);
             T t = stringToBean(str,clazz);
+            System.out.println("REDIS GET=> "+realKey+" | "+str);
             return t;
         }finally {
             returnToPool(jedis);
@@ -38,6 +40,7 @@ public class RedisService {
             String str = beanToString(value);
             //real key
             String realKey = prefix.getPrefix()+key;
+            System.out.println("REDIS SET=> "+realKey+" | "+str);
             int seconds = prefix.expireSeconds();
             if(seconds<=0){
                 jedis.set(realKey,str);
@@ -130,6 +133,53 @@ public class RedisService {
         }
     }
 
+    public boolean delete(KeyPrefix prefix){
+        if(prefix == null) {
+            return false;
+        }
+        List<String> keys = scanKeys(prefix.getPrefix());
+        if(keys==null || keys.size() <= 0) {
+            return true;
+        }
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            jedis.del(keys.toArray(new String[0]));
+            return true;
+        } catch (final Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if(jedis != null) {
+                jedis.close();
+            }
+        }
+    }
+    public List<String> scanKeys(String key) {
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            List<String> keys = new ArrayList<String>();
+            String cursor = "0";
+            ScanParams sp = new ScanParams();
+            sp.match("*"+key+"*");
+            sp.count(100);
+            do{
+                ScanResult<String> ret = jedis.scan(cursor, sp);
+                List<String> result = ret.getResult();
+                if(result!=null && result.size() > 0){
+                    keys.addAll(result);
+                }
+                //再处理cursor
+                cursor = ret.getStringCursor();
+            }while(!cursor.equals("0"));
+            return keys;
+        } finally {
+            if (jedis != null) {
+                jedis.close();
+            }
+        }
+    }
     private void returnToPool(Jedis jedis) {
         if(jedis != null){
             jedis.close();
